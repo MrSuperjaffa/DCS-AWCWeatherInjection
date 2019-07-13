@@ -1,0 +1,43 @@
+<?xml version="1.0"?>
+<Settings>
+	<Enabled>True</Enabled>
+	<Setup>
+		<Log>.\WeatherInjection.log</Log>
+		<SavedGamesFolder>C:\Users\Mr_Superjaffa\Saved Games\DCS\Missions</SavedGamesFolder>
+		<Mission></Mission> <!-- THIS WILL OVERRIDE THE SERVER CONFIG -->
+	</Setup>
+	<General>
+		<AirportICAO>KLGA</AirportICAO>
+		<DEBUG>True</DEBUG>
+	</General>
+	<Weather>
+		<!-- SETTING VALUES HERE WILL OVERWRITE THE REAL WEATHER --> 
+		<Temperature_C></Temperature_C> 
+		<Altimeter_InHG></Altimeter_InHG>
+		<!-- Winds (Upper winds are calculated from ground winds.) -->
+		<WindGroundSpeed_Kts></WindGroundSpeed_Kts>
+		<WindGroundDir></WindGroundDir>
+		<Wind2000Speed_Kts></Wind2000Speed_Kts>
+		<Wind2000Dir></Wind2000Dir>
+		<Wind8000Speed_Kts></Wind8000Speed_Kts>
+		<Wind8000Dir></Wind8000Dir>
+		<Turbulence></Turbulence> <!-- -->
+		<!-- Clouds and Precipitation -->
+		<CloudBase_FtMSL></CloudBase_FtMSL> <!-- -->
+		<CloudHeight_Ft></CloudHeight_Ft> <!-- -->
+		<CloudCoverage></CloudCoverage> <!-- 0 - 10 -->
+		<Precipitation></Precipitation> <!-- 0=None;1=Rain;2=Thunderstorm;3=Snow;4=Snowstorm -->
+		<!-- Fog -->
+		<FogHeight_Ft></FogHeight_Ft> <!-- -->
+		<FogVisibility_NM></FogVisibility_NM> <!-- 0 - 3 -->
+		<!-- Dust -->
+		<DustVisibility_Ft></DustVisibility_Ft>
+	</Weather>
+	<Constraints>
+		<!-- Real Weather Constraints. User weather bypasses these. -->
+		<MaxWindSpeed_Kts>35</MaxWindSpeed_Kts> D
+		<MinCloudBase_FtMSL>0</MinCloudBase_FtMSL>
+		<MaxCloudCoverage>10</MaxCloudCoverage>
+		<MinimumVisibility_NM>2</MinimumVisibility_NM> D
+	</Constraints>
+</Settings>
