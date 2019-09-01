@@ -4,7 +4,7 @@ Version 0.6.0 by Mr_Superjaffa#5430
 
 The goal of this project is to provide weather and time injection to DCS World missions using Aviation Weather Centre's Text Data Service.
 
-![Perf Monitor](doc/images/2.png)
+![Main Image](doc/images/1.png)
 
 #### Requirements
 1. Powershell 5.0 or Higher.
