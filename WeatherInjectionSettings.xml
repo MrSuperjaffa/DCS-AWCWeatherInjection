@@ -3,12 +3,14 @@
 	<Enabled>True</Enabled>
 	<Setup>
 		<Log>.\WeatherInjection.log</Log>
-		<SavedGamesFolder>C:\Users\Mr_Superjaffa\Saved Games\DCS</SavedGamesFolder>
+		<SavedGamesFolder>(COMPLETE ME)\Saved Games\DCS</SavedGamesFolder>
 		<Mission></Mission> <!-- THIS WILL OVERRIDE THE SERVER CONFIG -->
 	</Setup>
 	<General>
 		<AirportICAO>URSS</AirportICAO>
-		<DEBUG>True</DEBUG>
+		<EnableTime>False</EnableTime>
+		<TimeFormat>Zulu</TimeFormat> <!-- "Zulu" or "Local" -->
+		<DEBUG>False</DEBUG>
 	</General>
 	<Weather>
 		<!-- SETTING VALUES HERE WILL OVERWRITE THE REAL WEATHER --> 
@@ -33,11 +35,18 @@
 		<!-- Dust -->
 		<DustVisibility_Ft></DustVisibility_Ft>
 	</Weather>
+	<Time>
+		<!-- SETTING VALUES HERE WILL OVERWRITE THE REAL TIME -->
+		<Year></Year>
+		<Month></Month>
+		<Day></Day>
+		<Time></Time> <!-- HH:MM:SS --> 
+	</Time>
 	<Constraints>
 		<!-- Real Weather Constraints. User weather bypasses these. -->
 		<MaxWindSpeed_Kts>35</MaxWindSpeed_Kts>
 		<MinCloudBase_FtMSL>2000</MinCloudBase_FtMSL>
 		<MaxCloudCoverage>10</MaxCloudCoverage>
-		<MinimumVisibility_NM></MinimumVisibility_NM>
+		<MinimumVisibility_NM>1</MinimumVisibility_NM>
 	</Constraints>
 </Settings>
