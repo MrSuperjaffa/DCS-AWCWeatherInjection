@@ -3,7 +3,7 @@
 	<Enabled>True</Enabled>
 	<Setup>
 		<Log>.\WeatherInjection.log</Log>
-		<SavedGamesFolder>(COMPLETE ME)\Saved Games\DCS</SavedGamesFolder>
+		<SavedGamesFolder>[USERS]\Saved Games\DCS</SavedGamesFolder>
 		<Mission></Mission> <!-- THIS WILL OVERRIDE THE SERVER CONFIG -->
 	</Setup>
 	<General>
@@ -41,6 +41,7 @@
 		<Month></Month>
 		<Day></Day>
 		<Time></Time> <!-- HH:MM:SS --> 
+		<Timezone></Timezone>
 	</Time>
 	<Constraints>
 		<!-- Real Weather Constraints. User weather bypasses these. -->

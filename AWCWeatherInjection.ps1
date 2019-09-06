@@ -149,12 +149,12 @@ return $element }
 ####
 
 #$ErrorActionPreference = "Stop"
+$Version = "v0.6.5"
 [xml]$InjectionSettings = Get-Content "./WeatherInjectionSettings.xml"
 $Log = $InjectionSettings.Settings.Setup.Log
 $SavedGamesFolder = $InjectionSettings.Settings.Setup.SavedGamesFolder
 $Mission = $InjectionSettings.Settings.Setup.Mission
 $AirportICAO = $InjectionSettings.Settings.General.AirportICAO
-$Version = "v0.4"
 $DEBUG = $InjectionSettings.Settings.General.DEBUG
 
 Try {
@@ -194,6 +194,29 @@ Try {
     }
 } Catch {Write-Log "FATAL" "Weather fetching failed!" $Log}
 
+If ($InjectionSettings.Settings.Setup.Mission) {
+    If (Test-Path $Mission) {
+        $miz = $Mission
+        Write-Log "INFO" "Fetched Mission: $miz" $Log
+    }
+} Elseif (Test-Path (Join-Path -path $SavedGamesFolder -childPath "Config\serverSettings.lua")) {
+    Write-Log "INFO" "Found Saved Games Folder: $SavedGamesFolder" $Log
+    $serverConfigLocation = Join-Path -Path $SavedGamesFolder -ChildPath "Config\serverSettings.lua"
+    $serverConfig = Get-Content $serverConfigLocation
+    If($serverConfig) {Write-Log "INFO" "Found Server Config: $serverConfigLocation" $Log}
+    $miz = $ServerConfig[(GetSettingsElement(".miz"))]|%{$_.split('"')[1]}
+    Write-Log "INFO" "Fetched Mission: $miz" $Log
+}
+
+Write-Log "INFO" "Unzipping miz..." $Log
+Try {
+# Gets the latest modified mission in the mission folder.
+$miz | Rename-Item -NewName {$miz -replace ".miz",".zip"} -PassThru |  Set-Variable -Name Mizzip # Renaming it to a .zip.
+Get-ChildItem -Path $mizzip | Expand-Archive -DestinationPath "./TempMiz" -Force # Extracting it into ./TempMiz for editing.
+$mission = Get-Content ./TempMiz/mission # Finally getting the contents of the mission.
+$mizzip = $mizzip.fullname
+} Catch {Write-Log "FATAL" "Mission extraction failed!" $Log}
+
 ##############
 # BEGIN WEATHER GENERATION
 ##############
@@ -210,6 +233,7 @@ If ($InjectionSettings.Settings.Weather.WindGroundSpeedKts) {
 # Checking wind speeds against user constraints
 If ($InjectionSettings.Settings.Constraints.MaxWindSpeed_Kts -and ($WindSpeedGround -gt $InjectionSettings.Settings.Constraints.MaxWindSpeed_Kts)) {
     $WindSpeedGround = $InjectionSettings.Settings.Constraints.MaxWindSpeed_Kts
+    Write-Log "WARN" "Wind speed higher than max allowed! Setting maximum wind speed allowed!" $Log
 }
 
 # Setting wind direction from XML elseif TDS else null
@@ -321,6 +345,7 @@ If ($InjectionSettings.Settings.Weather.CloudCoverage) {
 # Checking cloud coverage against user constraints
 If ($InjectionSettings.Settings.Constraints.MaxCloudCoverage -and ($cloudCoverage -gt $InjectionSettings.Settings.Constraints.MaxCloudCoverage)) {
     $cloudCoverage = $InjectionSettings.Settings.Constraints.MaxCloudCoverage
+    Write-Log "WARN" "Cloud coverage higher than max allowed! Setting max allowed value!" $Log
 }
 Write-Log "INFO" "Cloud Cover: $cloudCoverage" $Log
 
@@ -360,12 +385,13 @@ If ($InjectionSettings.Settings.Weather.FogVisibility_NM) {
 } Elseif ($weatherxml.Response.Data.Metar.Visibility_statute_mi/1 -le 3) {
     [int]$FogVisibility = $weatherxml.Response.Data.Metar.Visibility_statute_mi/1 * $NMtoFeet
 } Else {
-    #[int]$FogVisibility = $null
+    [int]$FogVisibility = $null
 }
 
 # Checking fog visibility against user constraints
 If ($InjectionSettings.Settings.Constraints.MinimumVisibility_NM/1 -and $FogVisibility -gt ($InjectionSettings.Settings.Constraints.MinimumVisibility_NM/1 * 6076)) {
     $FogVisibility = $InjectionSettings.Settings.Constraints.MinimumVisibility_NM * 6076
+    Write-Log "WARN" "Fog Visibility lower than minimum allowed. Setting minimum allowed value!" $Log
 }
 
 # Setting fog thickness
@@ -388,28 +414,43 @@ Write-Log "INFO" "Precipitation: $Precipitation" $Log
 Write-Log "INFO" "Fog Visibility: $FogVisibility Ft" $Log
 Write-Log "INFO" "Fog Height: $FogHeight Ft" $Log
 
-<# Setting dust visibility if XML elseif TDS elseif Random else null
+Switch ($InjectionSettings.Settings.Weather.DustVisibility_Ft) {
+    "FU" {$Obscuration = $True; Break}
+    "DU" {$Obscuration = $True; Break}
+    "SA" {$Obscuration = $True; Break}
+    "HZ" {$Obscuration = $True; Break}
+    "VA" {$Obscuration = $True; Break}
+    "PO" {$Obscuration = $True; Break}
+    "SS" {$Obscuration = $True; Break}
+    "DS" {$Obscuration = $True; Break}
+    Default {$Obscuration = $False}
+}
+Write-Log "INFO" "Obscuration: $Obscuration" $Log
+
+# Setting dust visibility if XML elseif TDS elseif Random else null
 If ($InjectionSettings.Settings.Weather.DustVisibility_Ft) {
     [int]$DustVisibility = $InjectionSettings.Settings.Weather.DustVisibility_Ft
-} Elseif ($weatherxml.Response.Data.Metar.Wx_string -match "DS" -and $weatherxml.Response.Data.Metar.visibility_statute_mi -le 1.5) {
-    [int]$DustVisibility = $weatherxml.Response.Data.Metar.Visibility_statute_mi * 6076
-} Elseif ($weatherxml.Response.Data.Metar.Wx_string -match "DS") {
+} Elseif ($Obscuration -eq $True -and $weatherxml.Response.Data.Metar.visibility_statute_mi -le 1.5) {
+    [int]$DustVisibility = $weatherxml.Response.Data.Metar.Visibility_statute_mi/1 * 6076
+} Elseif ($Obscuration -eq $True) {
     [int]$DustVisibility = Get-Random -Maximum 9843 -Minimum 984
 } Else {
     [int]$DustVisibility = $null
 }
+Write-Log "INFO" "Dust Visibility: $DustVisibility Ft" $Log
 
 #Checking dust visibility against user constraints
-If ($DustVisibility -gt ($InjectionSettings.Settings.Constraints.MinimumVisibility_NM * 6076)) {
-    $DustVisibility = $InjectionSettings.Settings.Constraints.MinimumVisibility_NM * 6076
+If ($DustVisibility -gt ($InjectionSettings.Settings.Constraints.MinimumVisibility_NM/1 * 6076)) {
+    $DustVisibility = $InjectionSettings.Settings.Constraints.MinimumVisibility_NM/1 * 6076
+    Write-Log "WARN" "Dust Visibility greater than allowed! Setting max allowed value!" $Log
 }
-#>
 
 # Final conversion of units to Meters for later injection.
 $windSpeedGround = $windSpeedGround / $KnotToMPS
 $windSpeed2000 = $windSpeed2000 / $KnotToMPS
 $windSpeed8000 = $windSpeed8000 / $KnotToMPS
 $cloudBaseMSL = [math]::Round($cloudBaseMSL / $FeetToMeters)
+$cloudHeight = [math]::Round($cloudHeight / $FeetToMeters)
 $FogHeight = [math]::Round($FogHeight / $FeetToMeters)
 $FogVisibility = [math]::Round($FogVisibility / $FeetToMeters)
 $Pressure = $Pressure * $inHGTommHg
@@ -417,29 +458,97 @@ $DustVisibility = $DustVisibility * $FeetToMeters
 
 ##############
 # END WEATHER GENERATION
+# BEGIN TIME CONVERSION
 ##############
 
-If ($InjectionSettings.Settings.Setup.Mission) {
-    If (Test-Path $Mission) {
-        $miz = $Mission
-        Write-Log "INFO" "Fetched Mission: $miz" $Log
-    }
-} Elseif (Test-Path (Join-Path -path $SavedGamesFolder -childPath "Config\serverSettings.lua")) {
-    Write-Log "INFO" "Found Saved Games Folder: $SavedGamesFolder" $Log
-    $serverConfig = Get-Content (Join-Path -Path $SavedGamesFolder -ChildPath "Config\serverSettings.lua")
-    If($serverConfig) {Write-Log "INFO" "Found Server Config: $serverConfig" $Log}
-    $miz = $ServerConfig[(GetSettingsElement(".miz"))]|%{$_.split('"')[1]}
-    Write-Log "INFO" "Fetched Mission: $miz" $Log
-}
-
-Write-Log "INFO" "Unzipping miz..." $Log
 Try {
-# Gets the latest modified mission in the mission folder.
-$miz | Rename-Item -NewName {$miz -replace ".miz",".zip"} -PassThru |  Set-Variable -Name Mizzip # Renaming it to a .zip.
-Get-ChildItem -Path $mizzip | Expand-Archive -DestinationPath "./TempMiz" -Force # Extracting it into ./TempMiz for editing.
-$mission = Get-Content ./TempMiz/mission # Finally getting the contents of the mission.
-$mizzip = $mizzip.fullname
-} Catch {Write-Log "FATAL" "Mission extraction failed!" $Log}
+    If ($InjectionSettings.Settings.General.EnableTime -eq "True") {
+        Write-Log "INFO" "Time enabled. Calculating time..." $Log
+
+        # Grabbing METAR Zulu time and splitting it. YYYY MM DD HH:MM:SS
+        $DateTime = $weatherxml.Response.Data.Metar.Observation_time.Split("-TZ")
+
+        # Setting Year if XML else METAR else null.
+        If($InjectionSettings.Settings.Time.Year){
+            $Year = $InjectionSettings.Settings.Time.Year
+        } ElseIf ($DateTime[0] -ge 1900) {
+            $Year = $DateTime[0]
+        } Else {
+            $Year = $null
+        }
+        Write-Log "INFO" "Year: $Year" $Log
+
+        # Setting Month if XML else METAR else null.
+        If($InjectionSettings.Settings.Time.Month){
+            $Month = $InjectionSettings.Settings.Time.Month
+        } Elseif ($DateTime[1]) {
+            $Month = $DateTime[1]
+        } Else {
+            $Month = $null
+        }
+        Write-Log "INFO" "Month: $Month" $Log
+
+        # Setting Day if XML else METAR else null.
+        If($InjectionSettings.Settings.Time.Day){
+            $Day = $InjectionSettings.Settings.Time.Day
+        } Elseif ($DateTime[2]) {
+            $Day = $DateTime[2]
+        } Else {
+            $Day = $null
+        }
+        Write-Log "INFO" "Day: $Day" $Log
+
+        # Setting Time from XML else METAR else null. Converted into seconds.
+        If($InjectionSettings.Settings.Time.Time) {
+            $TimeHHMMSS = $InjectionSettings.Settings.Time.Time
+            $TimeSplit = $TimeHHMMSS.Split(":")
+            $TimeSeconds = (New-TimeSpan -Hours $TimeSplit[0] -Minutes $TimeSplit[1] -Seconds $TimeSplit[2]).TotalSeconds
+        } Elseif ($DateTime[3]) {
+            $TimeHHMMSS = $DateTime[3]
+            $TimeSplit = $TimeHHMMSS.Split(":")
+            $TimeSeconds = (New-TimeSpan -Hours $TimeSplit[0] -Minutes $TimeSplit[1] -Seconds $TimeSplit[2]).TotalSeconds
+        } Else {
+            $TimeSeconds = $null
+        }
+
+        # Setting Zulu into Local if enabled.
+        If ($InjectionSettings.Settings.Time.Timezone) {
+            $TimeSeconds = $TimeSeconds + ($InjectionSettings.Settings.Time.Timezone/1 * 3600)
+            Write-Log "INFO" "Setting manual timezone." $Log
+        } 
+        ElseIf($InjectionSettings.Settings.General.TimeFormat -Match "Local" -and $TimeSeconds) {
+            Write-Log "INFO" "Converting to local time..." $Log
+            
+            # Getting mission theatre and adjusting time accordingly.
+            [string]$theatreString = $mission[(GetMissionElement("theatre"))]
+            If ($theatreString -Match "Caucasus") {
+                $TimeSeconds = $TimeSeconds + (3 * 3600)
+                $Theatre = "Caucasus"
+            } Elseif ($theatreString -Match "PersianGulf") {
+                $TimeSeconds = $TimeSeconds + (4 * 3600)
+                $Theatre = "PersianGulf"
+            } Elseif ($theatreString -Match "Normandy") {
+                $TimeSeconds = $TimeSeconds + (2 * 3600)
+                $Theatre = "Normandy"
+            } Elseif ($theatreString -Match "Nevada") {
+                $TimeSeconds = $TimeSeconds - (7 * 3600)
+                $Theatre = "Nevada"
+            } Else {
+                Write-Log "ERROR" "Theatre not found!" $Log
+            }
+            Write-Log "INFO" "Theatre: $Theatre" $Log
+
+            # Making sure time makes sense.
+            If ($TimeSeconds -gt 86400) {$TimeSeconds = $TimeSeconds - 86400}
+            Elseif ($TimeSeconds -lt 0) {$TimeSeconds = $TimeSeconds + 86400}
+        }
+        Write-Log "INFO" "Time: $TimeHHMMSS $TimeSeconds" $Log
+    } Else {Write-Log "INFO" "Time disabled."}
+} Catch {Write-Log "ERROR" "Time function failed!" $Log}
+
+##############
+# END TIME CONVERSION
+##############
 
 Write-Log "INFO" "Exporting weather..." $Log
 # Exporting ground wind speed
@@ -594,7 +703,7 @@ If ($mission[(GetMissionElement("`"fog`"")) + 3] -match "visibility" -and $FogVi
 "@
     Write-Log "INFO" "Exported fog visibility." $Log
 }} Catch {Write-Log "ERROR" "Fog visibility export failed!" $Log}
-<#
+
 # Enabling dust in mission if dust present
 Try {
 If ($mission[(GetMissionElement("enable_dust"))] -match "enable_dust" -and $DustVisibility) {
@@ -610,6 +719,9 @@ If ($mission[(GetMissionElement("enable_dust"))] -match "enable_dust" -and !$Dus
     $mission[(GetMissionElement("enable_dust"))] = @"
         ["enable_dust"] = false,
 "@
+    $mission[(GetMissionElement("dust_density"))] = @"
+        ["dust_density"] = 0,
+"@
     Write-Log "INFO" "Dust Disabled." $Log
 }} Catch {Write-Log "ERROR" "Dust disable failed!" $Log}
 
@@ -621,7 +733,46 @@ If ($mission[(GetMissionElement("dust_density"))] -match "dust_density" -and $Du
 "@
     Write-Log "INFO" "Exported Dust Visibility." $Log
 }} Catch {Write-Log "ERROR" "Dust visibility export failed!" $Log}
-#>
+
+# Exporting mission year.
+Try {
+If ($mission[(GetMissionElement("date")) + 2] -match "Year" -and $year) {
+    $mission[(GetMissionElement("date")) + 2] = @"
+        ["Year"] = $Year,
+"@
+    Write-Log "INFO" "Exported Year." $Log
+}} Catch {Write-Log "ERROR" "Year export failed!"}
+
+# Exporting mission day.
+Try {
+If ($mission[(GetMissionElement("date")) + 3] -match "Day" -and $Day) {
+    $mission[(GetMissionElement("date")) + 3] = @"
+        ["Day"] = $Day,
+"@
+    Write-Log "INFO" "Exported Day." $Log
+}} Catch {Write-Log "ERROR" "Day export failed!"}
+
+# Exporting mission month.
+Try {
+If ($mission[(GetMissionElement("date")) + 4] -match "Month" -and $Month) {
+    $mission[(GetMissionElement("date")) + 4] = @"
+        ["Month"] = $Month,
+"@
+    Write-Log "INFO" "Exported Month." $Log
+}} Catch {Write-Log "ERROR" "Month export failed!"}
+
+# Exporting mission start time.
+Try {
+    If ($mission[(GetMissionElement("currentKey")) + 1] -match "start_time" -and $TimeSeconds) {
+    $mission[(GetMissionElement("currentKey")) + 1] = @"
+    ["start_time"] = $TimeSeconds,
+"@
+    Write-Log "INFO" "Exported Start Time." $Log
+}} Catch {Write-Log "ERROR" "Start Time export failed!"}
+
+#currentKey
+#start_time
+#forcedOptions
 
 Write-Log "INFO" "Finished Export." $Log
 Try {Set-Content -Path "./TempMiz/mission" -Value $mission -Force} Catch {Write-Log "FATAL" "Mission export failed!"}
