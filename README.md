@@ -1,6 +1,6 @@
 
 # AWCWeatherInjection for Windows & DCS World
-Version 0.6.5 by Mr_Superjaffa#5430
+Version 0.6.7 by Mr_Superjaffa#5430
 
 The goal of this project is to provide weather and time injection to DCS World missions using Aviation Weather Centre's Text Data Service.
 

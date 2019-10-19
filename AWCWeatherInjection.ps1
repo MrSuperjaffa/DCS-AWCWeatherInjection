@@ -149,7 +149,7 @@ return $element }
 ####
 
 #$ErrorActionPreference = "Stop"
-$Version = "v0.6.5"
+$Version = "v0.6.7"
 [xml]$InjectionSettings = Get-Content "./WeatherInjectionSettings.xml"
 $Log = $InjectionSettings.Settings.Setup.Log
 $SavedGamesFolder = $InjectionSettings.Settings.Setup.SavedGamesFolder
@@ -513,8 +513,9 @@ Try {
 
         # Setting Zulu into Local if enabled.
         If ($InjectionSettings.Settings.Time.Timezone) {
-            $TimeSeconds = $TimeSeconds + ($InjectionSettings.Settings.Time.Timezone/1 * 3600)
-            Write-Log "INFO" "Setting manual timezone." $Log
+            $Timezone = $InjectionSettings.Settings.Time.Timezone
+            $TimeSeconds = $TimeSeconds + ($Timezone * 3600)
+            Write-Log "INFO" "Setting manual timezone: $Timezone" $Log
         } 
         ElseIf($InjectionSettings.Settings.General.TimeFormat -Match "Local" -and $TimeSeconds) {
             Write-Log "INFO" "Converting to local time..." $Log
@@ -543,7 +544,7 @@ Try {
             Elseif ($TimeSeconds -lt 0) {$TimeSeconds = $TimeSeconds + 86400}
         }
         Write-Log "INFO" "Time: $TimeHHMMSS $TimeSeconds" $Log
-    } Else {Write-Log "INFO" "Time disabled."}
+    } Else {Write-Log "INFO" "Time disabled." $Log}
 } Catch {Write-Log "ERROR" "Time function failed!" $Log}
 
 ##############
@@ -683,6 +684,12 @@ If ($mission[(GetMissionElement("enable_fog"))] -match "enable_fog" -and !$FogVi
     $mission[(GetMissionElement("enable_fog"))] = @"
             ["enable_fog"] = false,
 "@
+    $mission[(GetMissionElement("`"fog`"")) + 2] = @"
+            ["thickness"] = 0,
+"@
+    $mission[(GetMissionElement("`"fog`"")) + 3] = @"
+            ["visibility"] = 0,
+"@
     Write-Log "INFO" "Fog disabled." $Log
 }} Catch {Write-Log "ERROR" "Fog disable failed!" $Log}
 
@@ -736,8 +743,8 @@ If ($mission[(GetMissionElement("dust_density"))] -match "dust_density" -and $Du
 
 # Exporting mission year.
 Try {
-If ($mission[(GetMissionElement("date")) + 2] -match "Year" -and $year) {
-    $mission[(GetMissionElement("date")) + 2] = @"
+If ($mission[(GetMissionElement("Year"))] -match "Year" -and $Year) {
+    $mission[(GetMissionElement("Year"))] = @"
         ["Year"] = $Year,
 "@
     Write-Log "INFO" "Exported Year." $Log
@@ -745,8 +752,8 @@ If ($mission[(GetMissionElement("date")) + 2] -match "Year" -and $year) {
 
 # Exporting mission day.
 Try {
-If ($mission[(GetMissionElement("date")) + 3] -match "Day" -and $Day) {
-    $mission[(GetMissionElement("date")) + 3] = @"
+If ($mission[(GetMissionElement("Day"))] -match "Day" -and $Day) {
+    $mission[(GetMissionElement("Day"))] = @"
         ["Day"] = $Day,
 "@
     Write-Log "INFO" "Exported Day." $Log
@@ -754,8 +761,8 @@ If ($mission[(GetMissionElement("date")) + 3] -match "Day" -and $Day) {
 
 # Exporting mission month.
 Try {
-If ($mission[(GetMissionElement("date")) + 4] -match "Month" -and $Month) {
-    $mission[(GetMissionElement("date")) + 4] = @"
+If ($mission[(GetMissionElement("Month"))] -match "Month" -and $Month) {
+    $mission[(GetMissionElement("Month"))] = @"
         ["Month"] = $Month,
 "@
     Write-Log "INFO" "Exported Month." $Log
