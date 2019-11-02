@@ -149,7 +149,7 @@ return $element }
 ####
 
 #$ErrorActionPreference = "Stop"
-$Version = "v0.6.7"
+$Version = "v0.6.8"
 [xml]$InjectionSettings = Get-Content "./WeatherInjectionSettings.xml"
 $Log = $InjectionSettings.Settings.Setup.Log
 $SavedGamesFolder = $InjectionSettings.Settings.Setup.SavedGamesFolder
@@ -513,7 +513,7 @@ Try {
 
         # Setting Zulu into Local if enabled.
         If ($InjectionSettings.Settings.Time.Timezone) {
-            $Timezone = $InjectionSettings.Settings.Time.Timezone
+            $Timezone = $InjectionSettings.Settings.Time.Timezone / 1
             $TimeSeconds = $TimeSeconds + ($Timezone * 3600)
             Write-Log "INFO" "Setting manual timezone: $Timezone" $Log
         } 
