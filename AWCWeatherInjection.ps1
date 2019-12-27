@@ -370,10 +370,10 @@ If ($InjectionSettings.Settings.Weather.Precipitation) {
     [int]$Precipitation = $InjectionSettings.Settings.Weather.Precipitation
 } Elseif ($weatherxml.Response.Data.Metar.Wx_string) {
     Switch -wildcard ($weatherxml.Response.Data.Metar.Wx_string) {
-    "*RA" {[int]$Precipitation = "1"}
-    "TS*" {[int]$Precipitation = "2"}
-    "*SN" {[int]$Precipitation = "3"}
-    "FZ*" {[int]$Precipitation = "4"} #This is for snowstorm, but a snowstorm in DCS is just a thunderstorm with snow so I have nothing to equate this too really
+    "*RA*" {[int]$Precipitation = "1"}
+    "*TS*" {[int]$Precipitation = "2"}
+    "*SN*" {[int]$Precipitation = "3"}
+    "*FZ*" {[int]$Precipitation = "4"} #This is for snowstorm, but a snowstorm in DCS is just a thunderstorm with snow so I have nothing to equate this too really
     default {[int]$Precipitation = "0"}}
 } Else {
     [int]$Precipitation = $null
