@@ -210,11 +210,11 @@ If ($InjectionSettings.Settings.Setup.Mission) {
 
 Write-Log "INFO" "Unzipping miz..." $Log
 Try {
-# Gets the latest modified mission in the mission folder.
-$miz | Rename-Item -NewName {$miz -replace ".miz",".zip"} -PassThru |  Set-Variable -Name Mizzip # Renaming it to a .zip.
-Get-ChildItem -Path $mizzip | Expand-Archive -DestinationPath "./TempMiz" -Force # Extracting it into ./TempMiz for editing.
-$mission = Get-Content ./TempMiz/mission # Finally getting the contents of the mission.
-$mizzip = $mizzip.fullname
+    # Gets the latest modified mission in the mission folder.
+    $miz | Rename-Item -NewName {$miz -replace ".miz",".zip"} -PassThru |  Set-Variable -Name Mizzip # Renaming it to a .zip.
+    Get-ChildItem -Path $mizzip | Expand-Archive -DestinationPath "./TempMiz" -Force # Extracting it into ./TempMiz for editing.
+    $mission = Get-Content ./TempMiz/mission # Finally getting the contents of the mission.
+    $mizzip = $mizzip.fullname
 } Catch {Write-Log "FATAL" "Mission extraction failed!" $Log}
 
 ##############
@@ -369,11 +369,11 @@ If ($InjectionSettings.Settings.Weather.CloudBase_FtMSL) {
 If ($InjectionSettings.Settings.Weather.Precipitation) {
     [int]$Precipitation = $InjectionSettings.Settings.Weather.Precipitation
 } Elseif ($weatherxml.Response.Data.Metar.Wx_string) {
-    Switch ($weatherxml.Response.Data.Metar.Wx_string) {
-    "RA" {[int]$Precipitation = "1"}
-    "TS" {[int]$Precipitation = "2"}
-    "SN" {[int]$Precipitation = "3"}
-    "FZ" {[int]$Precipitation = "4"} #This is for snowstorm, but a snowstorm in DCS is just a thunderstorm with snow so I have nothing to equate this too really
+    Switch -wildcard ($weatherxml.Response.Data.Metar.Wx_string) {
+    "*RA" {[int]$Precipitation = "1"}
+    "TS*" {[int]$Precipitation = "2"}
+    "*SN" {[int]$Precipitation = "3"}
+    "FZ*" {[int]$Precipitation = "4"} #This is for snowstorm, but a snowstorm in DCS is just a thunderstorm with snow so I have nothing to equate this too really
     default {[int]$Precipitation = "0"}}
 } Else {
     [int]$Precipitation = $null
