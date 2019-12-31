@@ -3,12 +3,12 @@
 	<Enabled>True</Enabled>
 	<Setup>
 		<Log>.\WeatherInjection.log</Log>
-		<SavedGamesFolder>[USERS]\Saved Games\DCS</SavedGamesFolder>
+		<SavedGamesFolder>C:\Users\Mr_Superjaffa\Saved Games\DCS</SavedGamesFolder>
 		<Mission></Mission> <!-- THIS WILL OVERRIDE THE SERVER CONFIG -->
 	</Setup>
 	<General>
 		<AirportICAO>URSS</AirportICAO>
-		<EnableTime>False</EnableTime>
+		<EnableTime>True</EnableTime>
 		<TimeFormat>Zulu</TimeFormat> <!-- "Zulu" or "Local" -->
 		<DEBUG>False</DEBUG>
 	</General>
