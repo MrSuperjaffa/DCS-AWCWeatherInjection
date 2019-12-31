@@ -1,19 +1,9 @@
 ﻿<#
     Author: Mr_Superjaffa#5430
     Description: Inject real world weather into DCS .miz file for use on servers.
-    Version: v0.5
+    Version: v0.6.9
     Modified: May 25th/2019
-    Notes: Weather Calculation: Finished
-           Mission Extraction/Recompression: WIP, Working
-           Time Functions: Non-Existent
-           User Weather: Non-Existent
-
-    TODO:
-        ***Create log if not found.
-        Set cloud height to be that of the thickest layer.
-        Check against user constraints. <-- Basics done.
-        Rewrite Fog/Visibility calculations.
-        Rewrite Turbulence calculations.
+    Notes: N/A
 
 #>
 
@@ -149,7 +139,7 @@ return $element }
 ####
 
 #$ErrorActionPreference = "Stop"
-$Version = "v0.6.8"
+$Version = "v0.6.9"
 [xml]$InjectionSettings = Get-Content "./WeatherInjectionSettings.xml"
 $Log = $InjectionSettings.Settings.Setup.Log
 $SavedGamesFolder = $InjectionSettings.Settings.Setup.SavedGamesFolder
@@ -662,7 +652,7 @@ If ($mission[(GetMissionElement("clouds")) + 4] -match "base" -and $cloudBaseMSL
 
 # Exporting precipitation
 Try {
-If ($mission[(GetMissionElement("clouds")) + 5] -match "iprecptns" -and $Precipitation) {
+If ($mission[(GetMissionElement("clouds")) + 5] -match "iprecptns" -and $Precipitation -ge 0) {
     $mission[(GetMissionElement("clouds")) + 5] = @"
             ["iprecptns"] = $Precipitation,
 "@
