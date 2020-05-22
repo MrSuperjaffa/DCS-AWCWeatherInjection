@@ -363,6 +363,12 @@ If ($InjectionSettings.Settings.Weather.CloudBase_FtMSL) {
     $cloudBaseMSL = $null
 }
 
+# Checking cloud base against user constraints
+If ($InjectionSettings.Settings.Constraints.MinCloudBase_FtMSL -and ($cloudBaseMSL -lt $InjectionSettings.Settings.Constraints.MinCloudBase_FtMSL)) {
+    $cloudBaseMSL = $InjectionSettings.Settings.Constraints.MinCloudBase_FtMSL
+    Write-Log "WARN" "Cloud base lower than allowed! Setting minimum allowed value!" $Log
+}
+
 # Generating cloud height
 [int]$cloudHeight = Get-Random -Maximum "6562" -Minimum "656"
 
