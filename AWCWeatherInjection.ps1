@@ -1,8 +1,8 @@
 ﻿<#
     Author: Mr_Superjaffa#5430
     Description: Inject real world weather into DCS .miz file for use on servers.
-    Version: v0.6.9
-    Modified: May 25th/2019
+    Version: v0.6.10
+    Modified: Dec 2nd/2020
     Notes: N/A
 
 #>
@@ -139,7 +139,7 @@ return $element }
 ####
 
 #$ErrorActionPreference = "Stop"
-$Version = "v0.6.9"
+$Version = "v0.6.10"
 [xml]$InjectionSettings = Get-Content "./WeatherInjectionSettings.xml"
 $Log = $InjectionSettings.Settings.Setup.Log
 $SavedGamesFolder = $InjectionSettings.Settings.Setup.SavedGamesFolder
