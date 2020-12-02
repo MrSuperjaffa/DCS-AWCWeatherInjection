@@ -30,7 +30,7 @@
 		<CloudCoverage></CloudCoverage> <!-- 0 - 10 -->
 		<Precipitation></Precipitation> <!-- 0=None;1=Rain;2=Thunderstorm;3=Snow;4=Snowstorm -->
 		<!-- Fog -->
-		<FogHeight_Ft></FogHeight_Ft> <!-- -->
+		<FogThickness_Ft></FogThickness_Ft> <!-- -->
 		<FogVisibility_NM></FogVisibility_NM> <!-- 0 - 3 -->
 		<!-- Dust -->
 		<DustVisibility_Ft></DustVisibility_Ft>
