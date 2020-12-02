@@ -167,7 +167,7 @@ Write-Log "INFO" "---------- Initializing AWCWeatherInjection $Version ---------
 #Write-Log "INFO" $MissionFolder $Log
 
 # Exit if disabled. Nothing to do here.
-If (!$InjectionSettings.Settings.Enabled -eq "False") {
+If ($InjectionSettings.Settings.Enabled -eq "False") {
     Write-Log "INFO" "Script Disabled. Exiting..." $Log
     Exit
 } Else {
