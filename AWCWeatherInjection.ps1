@@ -1,93 +1,11 @@
 ﻿<#
     Author: Mr_Superjaffa#5430
     Description: Inject real world weather into DCS .miz file for use on servers.
-    Version: v0.6.10
-    Modified: Dec 2nd/2020
+    Version: v0.7.0
+    Modified: April 12/2021
     Notes: N/A
-
 #>
 
-<# 
-    -==Min/Max Weather Contraints (Tested on Caucasus)==-
-    
-    ==Temperature==
-    Dec-Feb: -12.4C - 10.4C
-    March-May: -3.1C - 23.2C
-    June - August: 8.4C - 50C
-    Sept - Nov: -6.6C - 26.5C
-
-    Mission Editor: Celcius C
-    Miz File: Celcius C
-
-    ==Precipitation==
-    TempC > 0 {
-        <5: None
-        >5: Rain
-        >=9: Rain, Thunderstorm
-    }
-    TempC < 0 {
-        <5: None
-        >5: Snow
-        >=9: Snow, Snowstorm
-    }
-
-    None: 0
-    Rain: 1
-    Thunderstorm: 2
-    Snow: 3
-    Snowstorm: 4
-
-    ==Clouds==
-    Min Cloud Base: 984FT
-    Max Cloud Base: 16404FT
-    Min Cloud Thickness: 656FT
-    Max Cloud Thickness: 6562FT
-    Cloud Density: 0 - 8 Broken, 9-10 Overcast
-    Max Density Before Gross Fog: 8
-
-    ==Pressure==
-    Min Pressure: 28.35InHG
-    Max Pressure: 31.09InHG
-
-    Mission Editor: Inches of Mercury InHG
-    Miz File: Millimeters of Mercury mmHG
-
-    ==Winds==
-    Max 33FT: 97KTS
-    Max 1600FT: 206KTS
-    Max 6600FT: 97KTS
-    Max 26000FT: 97KTS
-
-    Mission Editor: Knots KTS | Winds TO
-    Miz File: Metres Per Second M/S | Winds TO
-
-    ==Turbulence==
-    Max: 197
-
-    Formula: 0.1 x NumFPS?
-
-    Mission Editor: Feet Per Second
-    Miz File: Metres Per Second
-
-    ==Fog==
-    Min Visibility: 82FT
-    Max Visibility: 19685FT
-    Min Thickness: 0FT
-    Max Thickness: 3281FT
-
-    Mission Editor: Feet FT
-    Miz File: Meters M
-
-    ==Dust Smoke==
-    Min Visibility: 984FT
-    Max Visibility: 9843FT
-
-    Mission Editor: Feet FT
-    Miz File: Meters M
-
-#>
-
-# Log Output "PARAM1" "MESSAGE" "LOGFILE"
 Function Write-Log {
     [CmdletBinding()]
     Param(
@@ -133,6 +51,16 @@ function GetSettingsElement($search) {
             $element = $i
             $i = $serverConfig.Length }}
 return $element }
+
+Function Add-Element($ArrayIn, [int]$InsertIndex, $InputString) {
+    $ArrayA = $ArrayIn[0..$InsertIndex]
+    $ArrayB = $ArrayIn[$InsertIndex..$ArrayIn.Count]
+    
+    $ArrayA[$InsertIndex] = $InputString
+    $ArrayA += $ArrayB
+
+    Return $ArrayA
+}
 
 ####
 # INITIALIZING
@@ -194,7 +122,7 @@ If ($InjectionSettings.Settings.Setup.Mission) {
     $serverConfigLocation = Join-Path -Path $SavedGamesFolder -ChildPath "Config\serverSettings.lua"
     $serverConfig = Get-Content $serverConfigLocation
     If($serverConfig) {Write-Log "INFO" "Found Server Config: $serverConfigLocation" $Log}
-    $miz = $ServerConfig[(GetSettingsElement(".miz"))]|%{$_.split('"')[1]}
+    $miz = $ServerConfig[(GetSettingsElement("\[1\]"))]|%{$_.split('"')[1]}
     Write-Log "INFO" "Fetched Mission: $miz" $Log
 }
 
@@ -320,11 +248,11 @@ If ($InjectionSettings.Settings.Weather.CloudCoverage) {
     Switch ($weatherxml.Response.Data.Metar.Sky_condition.Sky_Cover) {
     "SKC" {[int]$cloudCoverage = "0"}
     "CLR" {[int]$cloudCoverage = "0"}
-    "CAVOK" {[int]$cloudCoverage = "0"}
-    "FEW" {[int]$cloudCoverage = "4"}
-    "SCT" {[int]$cloudCoverage = "6"}
-    "BKN" {[int]$cloudCoverage = "8"}
-    "OVC" {[int]$cloudCoverage = "10"}
+    "CAVOK" {[int]$cloudCoverage = Get-Random -Input 0,1,2}
+    "FEW" {[int]$cloudCoverage = Get-Random -Input 3,4}
+    "SCT" {[int]$cloudCoverage = Get-Random -Input 5,6}
+    "BKN" {[int]$cloudCoverage = Get-Random -Input 7,8}
+    "OVC" {[int]$cloudCoverage = Get-Random -Input 9,10}
     "OVX" {[int]$cloudCoverage = "10"}
     "VV" {[int]$cloudCoverage = "10"}
     default {$cloudCoverage = "2"}}
@@ -374,7 +302,7 @@ If ($InjectionSettings.Settings.Weather.Precipitation) {
 } Else {
     [int]$Precipitation = $null
 }
-
+<#
 # Setting fog visibility if XML elseif TDS else null
 If ($InjectionSettings.Settings.Weather.FogVisibility_NM) {
     [int]$FogVisibility = $InjectionSettings.Settings.Weather.FogVisibility_NM/1 * $NMtoFeet
@@ -422,6 +350,9 @@ Switch ($InjectionSettings.Settings.Weather.DustVisibility_Ft) {
     Default {$Obscuration = $False}
 }
 Write-Log "INFO" "Obscuration: $Obscuration" $Log
+#>
+<#
+## Commented out the dust settings until it's fixed by ED.
 
 # Setting dust visibility if XML elseif TDS elseif Random else null
 If ($InjectionSettings.Settings.Weather.DustVisibility_Ft) {
@@ -440,6 +371,41 @@ If ($DustVisibility -gt ($InjectionSettings.Settings.Constraints.MinimumVisibili
     $DustVisibility = $InjectionSettings.Settings.Constraints.MinimumVisibility_NM/1 * 6076
     Write-Log "WARN" "Dust Visibility greater than allowed! Setting max allowed value!" $Log
 }
+#>
+
+$presetHSCT = @("Preset3","Preset4","Preset8")
+
+$presetLSCT = @("Preset1","Preset2")
+
+$presetSCT = @("Preset5","Preset6","Preset7","Preset9","Preset10","Preset11","Preset12")
+
+$presetBKN = @("Preset13","Preset14","Preset15","Preset16","Preset17","Preset18","Preset19","Preset20")
+
+$presetOVC = @("Preset21","Preset22","Preset23","Preset24","Preset25","Preset26","Preset27")
+
+$presetOVCRA = @("RainyPreset1","RainyPreset2","RainyPreset3")
+
+Switch ($cloudCoverage)
+{
+    {$_ -eq 0} {$cloudPreset = $null; Break}
+    {$_ -le 2} {$cloudPreset = Get-Random -InputObject $presetHSCT; Break} ## High Scattered
+    {$_ -le 4} {$cloudPreset = Get-Random -InputObject $presetLSCT; Break} ## Light Scattered
+    {$_ -le 6} {$cloudPreset = Get-Random -InputObject $presetSCT; Break} ## Scattered
+    {$_ -le 8} {$cloudPreset = Get-Random -InputObject $presetBKN; Break} ## Broken
+    {$_ -le 10} { ## Overcast
+        if ($Precipitation -ge 1) {
+            $cloudPreset = Get-Random -InputObject $presetOVCRA
+        } else {
+            $cloudPreset = Get-Random -InputObject $presetOVC
+        };
+        Break
+    } 
+}
+
+If ($InjectionSettings.Settings.Weather.WeatherPreset) {
+    $cloudPreset = $InjectionSettings.Settings.Weather.WeatherPreset
+}
+Write-Log "INFO" "Cloud Preset: $cloudPreset" $Log
 
 # Final conversion of units to Meters for later injection.
 $windSpeedGround = $windSpeedGround / $KnotToMPS
@@ -548,6 +514,12 @@ Try {
 ##############
 
 Write-Log "INFO" "Exporting weather..." $Log
+
+If (($null -eq (GetMissionElement("`"preset`""))) -and $cloudPreset) {
+    Write-Log "INFO" "Creating cloud preset line." $Log
+    $mission = Add-Element -ArrayIn $mission -InsertIndex (GetMissionElement("`"base`"") + 1) -InputString "            [`"preset`"] = `"$cloudPreset`","
+}
+
 # Exporting ground wind speed
 Try {
 If ($mission[(GetMissionElement("atGround")) + 2] -match "speed" -and $windSpeedGround) {
@@ -736,6 +708,15 @@ If ($mission[(GetMissionElement("dust_density"))] -match "dust_density" -and $Du
 "@
     Write-Log "INFO" "Exported Dust Visibility." $Log
 }} Catch {Write-Log "ERROR" "Dust visibility export failed!" $Log}
+
+# Exporting weather preset
+Try {
+If ($mission[(GetMissionElement("`"preset`""))] -match "preset" -and $cloudPreset) {
+    $mission[(GetMissionElement("`"preset`""))] = @"
+        ["preset"] = `"$cloudPreset`",
+"@
+    Write-Log "INFO" "Exported Weather Preset." $Log
+}} Catch {Write-Log "ERROR" "Weather Preset export failed!" $Log}
 
 # Exporting mission year.
 Try {

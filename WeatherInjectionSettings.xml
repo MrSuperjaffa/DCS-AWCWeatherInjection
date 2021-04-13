@@ -34,6 +34,7 @@
 		<FogVisibility_NM></FogVisibility_NM> <!-- 0 - 3 -->
 		<!-- Dust -->
 		<DustVisibility_Ft></DustVisibility_Ft>
+		<WeatherPreset></WeatherPreset>
 	</Weather>
 	<Time>
 		<!-- SETTING VALUES HERE WILL OVERWRITE THE REAL TIME -->
