@@ -9,7 +9,7 @@
 	<General>
 		<AirportICAO>URSS</AirportICAO>
 		<EnableTime>False</EnableTime>
-		<TimeFormat>Zulu</TimeFormat> <!-- "Zulu" or "Local" -->
+		<TimeFormat>Random</TimeFormat> <!-- "Zulu", "Local", "Random" -->
 		<DEBUG>False</DEBUG>
 	</General>
 	<Weather>

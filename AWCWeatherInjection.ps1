@@ -465,6 +465,8 @@ Try {
             $TimeHHMMSS = $InjectionSettings.Settings.Time.Time
             $TimeSplit = $TimeHHMMSS.Split(":")
             $TimeSeconds = (New-TimeSpan -Hours $TimeSplit[0] -Minutes $TimeSplit[1] -Seconds $TimeSplit[2]).TotalSeconds
+        } Elseif ($InjectionSettings.Settings.General.TimeFormat -Match "Random") {
+            $TimeSeconds = ((Get-Random -Minimum 0 -Maximum 24) * 3600)
         } Elseif ($DateTime[3]) {
             $TimeHHMMSS = $DateTime[3]
             $TimeSplit = $TimeHHMMSS.Split(":")
