@@ -143,7 +143,13 @@ Try {
 If ($InjectionSettings.Settings.Weather.WindGroundSpeedKts) {
     [int]$windSpeedGround = $InjectionSettings.Settings.Weather.WindGroundSpeedKts
 } Elseif ($weatherxml.Response.Data.Metar.wind_speed_kt) {
-    [int]$windSpeedGround = $weatherxml.Response.Data.Metar.Wind_speed_kt
+	If ([int]$weatherxml.Response.Data.Metar.elevation_m -le 488) {
+		[int]$windSpeedGround = (1.95958*$weatherxml.Response.Data.Metar.wind_speed_kt)/([Math]::Pow((([float]$weatherxml.Response.Data.Metar.elevation_m)*3.281),0.1924))
+	} Elseif ([int]$weatherxml.Response.Data.Metar.elevation_m -le 2000) {
+		[int]$windSpeedGround = ([float]$weatherxml.Response.Data.Metar.Wind_speed_kt)/2
+	} Else {
+		[int]$windSpeedGround = $weatherxml.Response.Data.Metar.Wind_speed_kt
+	}
 } Else {
     [int]$windSpeedGround = $null
 }
