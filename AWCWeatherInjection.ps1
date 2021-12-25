@@ -1,7 +1,7 @@
 ﻿<#
     Author: Mr_Superjaffa#5430
     Description: Inject real world weather into DCS .miz file for use on servers.
-    Version: v0.7.1
+    Version: v0.7.2
     Modified: May 15/2021
     Notes: N/A
 #>
@@ -67,7 +67,7 @@ Function Add-Element($ArrayIn, [int]$InsertIndex, $InputString) {
 ####
 
 #$ErrorActionPreference = "Stop"
-$Version = "v0.6.10"
+$Version = "v0.7.2"
 [xml]$InjectionSettings = Get-Content "./WeatherInjectionSettings.xml"
 $Log = $InjectionSettings.Settings.Setup.Log
 $SavedGamesFolder = $InjectionSettings.Settings.Setup.SavedGamesFolder
@@ -107,10 +107,158 @@ Try {
     If ($InjectionSettings.Settings.General.AirportICAO) {
         Write-Log "INFO" "Fetching TDS Weather for $AirportICAO..." $Log
         [xml]$weatherxml = Invoke-WebRequest "https://www.aviationweather.gov/adds/dataserver_current/httpparam?dataSource=metars&requestType=retrieve&format=xml&hoursBeforeNow=3&mostRecent=true&stationString=$AirportICAO" -UseBasicParsing
+		if(-not $weatherxml.response.data.metar.raw_text -and (Test-Path -Path "./$($InjectionSettings.Settings.General.AirportICAO)-Weather.csv")) {
+			Write-Log "INFO" "Entering Historic Mode." $Log
+
+			#Historic data in CSV format for this function can be obtained from https://mesonet.agron.iastate.edu/request/download.phtml
+			$historicdata = Import-CSV -Path "./$($InjectionSettings.Settings.General.AirportICAO)-Weather.csv"
+
+			$todayMonth = (Get-Date).ToUniversalTime().ToString("MM")
+			if($InjectionSettings.Settings.Time.Month) {
+				$todayMonth = $InjectionSettings.Settings.Time.Month
+				if($todayMonth.Length -eq 1) {
+					$todayMonth = "0$todayMonth"
+				}
+			}
+			$todayDay = (Get-Date).ToUniversalTime().ToString("dd")
+			if($InjectionSettings.Settings.Time.Day) {
+				$todayDay = $InjectionSettings.Settings.Time.Day
+			}
+			$todayTime = (Get-Date).ToUniversalTime().ToString("HH:mm")
+			if($InjectionSettings.Settings.Time.Time) {
+				$timeSplit = $InjectionSettings.Settings.Time.Time.Split(":")
+				$todayTime = "$($timeSplit[0]):$($timeSplit[1])"
+			}
+
+			$i = 0
+			$temp = -1
+			$diff
+			foreach($item in $historicdata) {
+				$timestamp = $item.valid.replace(" ","T").Split("-T")
+				if(($timestamp[1] -eq $todayMonth) -and ($timestamp[2] -eq $todayDay)) {
+					#Write-Host $timestamp[0] $timestamp[1] $timestamp[2] $timestamp[3] i:$i
+					if(($temp -eq -1) -or ($([Math]::Abs(((Get-Date -Hour ([int]$timestamp[3].Substring(0,2)) -Minute ([int]$timestamp[3].Substring(3,2)) -Second 0) - (Get-Date -Hour ([int]$todayTime.Substring(0,2)) -Minute ([int]$todayTime.Substring(3,2)) -Second 0)).TotalMinutes) -lt $diff))) {
+						$temp = $i
+						$diff =  $([Math]::Abs(((Get-Date -Hour ([int]$timestamp[3].Substring(0,2)) -Minute ([int]$timestamp[3].Substring(3,2)) -Second 0) - (Get-Date -Hour ([int]$todayTime.Substring(0,2)) -Minute ([int]$todayTime.Substring(3,2)) -Second 0)).TotalMinutes))
+					}
+				}
+				$i++
+			}
+			$i = $temp
+
+			Write-Log "INFO" "Using historic METAR at index $i" $Log
+
+			$metar = $weatherxml.CreateNode("element", "metar", $null)
+
+			$t = $weatherxml.CreateNode("element", "raw_text", $null)
+			$metar.AppendChild($t) | Out-Null
+
+			$t = $weatherxml.CreateNode("element", "observation_time", $null)
+			$metar.AppendChild($t) | Out-Null
+
+			if (-not ($historicdata[$i].tmpf -eq "M")) {
+				$t = $weatherxml.CreateNode("element", "temp_c", $null)
+				$metar.AppendChild($t) | Out-Null
+			}
+			
+			if (-not ($historicdata[$i].drct -eq "M")) {
+				$t = $weatherxml.CreateNode("element", "wind_dir_degrees", $null)
+				$metar.AppendChild($t) | Out-Null
+			}
+			
+			if (-not ($historicdata[$i].sknt -eq "M")) {
+				$t = $weatherxml.CreateNode("element", "wind_speed_kt", $null)
+				$metar.AppendChild($t) | Out-Null
+			}
+
+			if (-not ($historicdata[$i].vsby -eq "M")) {
+				$t = $weatherxml.CreateNode("element", "visibility_statute_mi", $null)
+				$metar.AppendChild($t) | Out-Null
+			}
+
+			if (-not ($historicdata[$i].alti -eq "M")) {
+				$t = $weatherxml.CreateNode("element", "altim_in_hg", $null)
+				$metar.AppendChild($t) | Out-Null
+			}
+
+			if (-not ($historicdata[$i].wxcodes -eq "M")) {
+				$t = $weatherxml.CreateNode("element", "wx_string", $null)
+				$metar.AppendChild($t) | Out-Null
+			}
+
+			if (-not ($historicdata[$i].skyc1 -eq "M")) {
+				$t = $weatherxml.CreateNode("element", "sky_condition", $null)
+				$t.SetAttribute("sky_cover", $historicdata[$i].skyc1)
+				if (-not ($historicdata[$i].skyl1 -eq "M")) {
+					$t.SetAttribute("cloud_base_ft_agl", [int]$historicdata[$i].skyl1)
+				}
+				$metar.AppendChild($t) | Out-Null
+			}
+			
+			if (-not ($historicdata[$i].skyc2 -eq "M")) {
+				$t = $weatherxml.CreateNode("element", "sky_condition", $null)
+				$t.SetAttribute("sky_cover", $historicdata[$i].skyc2)
+				if (-not ($historicdata[$i].skyl2 -eq "M")) {
+					$t.SetAttribute("cloud_base_ft_agl", [int]$historicdata[$i].skyl2)
+				}
+				$metar.AppendChild($t) | Out-Null
+			}
+			
+			if (-not ($historicdata[$i].skyc3 -eq "M")) {
+				$t = $weatherxml.CreateNode("element", "sky_condition", $null)
+				$t.SetAttribute("sky_cover", $historicdata[$i].skyc3)
+				if (-not ($historicdata[$i].skyl3 -eq "M")) {
+					$t.SetAttribute("cloud_base_ft_agl", [int]$historicdata[$i].skyl3)
+				}
+				$metar.AppendChild($t) | Out-Null
+			}
+			
+			if (-not ($historicdata[$i].skyc4 -eq "M")) {
+				$t = $weatherxml.CreateNode("element", "sky_condition", $null)
+				$t.SetAttribute("sky_cover", $historicdata[$i].skyc4)
+				if (-not ($historicdata[$i].skyl4 -eq "M")) {
+					$t.SetAttribute("cloud_base_ft_agl", [int]$historicdata[$i].skyl4)
+				}
+				$metar.AppendChild($t) | Out-Null
+			}
+
+			
+			if (-not ($historicdata[$i].elevation -eq "M")) {
+				$t = $weatherxml.CreateNode("element", "elevation_m", $null)
+				$metar.AppendChild($t) | Out-Null
+			}
+
+			#$weatherxml.response.data.
+			$weatherxml.response.data.AppendChild($metar) | Out-Null
+			$weatherxml.response.data.metar.raw_text = $historicdata[$i].metar
+			$weatherxml.response.data.metar.observation_time = "$($historicdata[$i].valid.replace(" ","T")):00Z"
+			if(-not ($historicdata[$i].tmpf -eq "M")) {
+				$weatherxml.response.data.metar.temp_c = "$(([int]$historicdata[$i].tmpf - 32) / 1.8)"
+			}
+			if(-not ($historicdata[$i].drct -eq "M")) {
+				$weatherxml.response.data.metar.wind_dir_degrees = "$([int]$historicdata[$i].drct)"
+			}
+			if(-not ($historicdata[$i].sknt -eq "M")) {
+				$weatherxml.response.data.metar.wind_speed_kt = "$([int]$historicdata[$i].sknt)"
+			}
+			if(-not ($historicdata[$i].vsby -eq "M")) {
+				$weatherxml.response.data.metar.visibility_statute_mi = "$($historicdata[$i].vsby)"
+			}
+			if(-not ($historicdata[$i].alti -eq "M")) {
+				$weatherxml.response.data.metar.altim_in_hg = "$($historicdata[$i].alti)"
+			}
+			if(-not ($historicdata[$i].wxcodes -eq "M")) {
+				$weatherxml.response.data.metar.wx_string = "$($historicdata[$i].wxcodes)"
+			}
+			if(-not ($historicdata[$i].elevation -eq "M")) {
+				$weatherxml.response.data.metar.elevation_m = "$([int]$historicdata[$i].elevation)"
+			}
+			#$weatherxml.Save("test.xml") #For debugging the fake XML
+		}
         $debugMETAR = $weatherxml.response.data.metar.raw_text
         Write-Log "INFO" "TDS METAR: $debugMETAR" $Log
     }
-} Catch {Write-Log "FATAL" "Weather fetching failed!" $Log}
+} Catch {Write-Log "FATAL" "Weather fetching failed! $_" $Log}
 
 If ($InjectionSettings.Settings.Setup.Mission) {
     If (Test-Path $Mission) {
@@ -144,7 +292,7 @@ If ($InjectionSettings.Settings.Weather.WindGroundSpeedKts) {
     [int]$windSpeedGround = $InjectionSettings.Settings.Weather.WindGroundSpeedKts
 } Elseif ($weatherxml.Response.Data.Metar.wind_speed_kt) {
 	If ([int]$weatherxml.Response.Data.Metar.elevation_m -le 488) {
-		[int]$windSpeedGround = (1.95958*$weatherxml.Response.Data.Metar.wind_speed_kt)/([Math]::Pow((([float]$weatherxml.Response.Data.Metar.elevation_m)*3.281),0.1924))
+		[int]$windSpeedGround = (1.95958*[float]$weatherxml.Response.Data.Metar.wind_speed_kt)/([Math]::Pow((([float]$weatherxml.Response.Data.Metar.elevation_m)*3.281),0.1924))
 	} Elseif ([int]$weatherxml.Response.Data.Metar.elevation_m -le 2000) {
 		[int]$windSpeedGround = ([float]$weatherxml.Response.Data.Metar.Wind_speed_kt)/2
 	} Else {
@@ -274,7 +422,7 @@ If ($InjectionSettings.Settings.Constraints.MaxCloudCoverage -and ($cloudCoverag
 Write-Log "INFO" "Cloud Cover: $cloudCoverage" $Log
 
 # Grabbing station height MSL, this will be used to calculate cloud height MSL as all clouds are reported as AGL.
-[int]$stationHeight = $weatherxml.Response.Data.Metar.Elevation_m/1 * $FeetToMeters
+[int]$stationHeight = $weatherxml.Response.Data.Metar.elevation_m/1 * $FeetToMeters
 
 # Setting cloud base if XML elseif TDS else null
 If ($InjectionSettings.Settings.Weather.CloudBase_FtMSL) {

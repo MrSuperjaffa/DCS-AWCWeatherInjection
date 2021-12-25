@@ -7,9 +7,9 @@
 		<Mission></Mission> <!-- THIS WILL OVERRIDE THE SERVER CONFIG -->
 	</Setup>
 	<General>
-		<AirportICAO>URSS</AirportICAO>
+		<AirportICAO>KLSV</AirportICAO>
 		<EnableTime>False</EnableTime>
-		<TimeFormat>Random</TimeFormat> <!-- "Zulu", "Local", "Random" -->
+		<TimeFormat>Zulu</TimeFormat> <!-- "Zulu" or "Local" -->
 		<DEBUG>False</DEBUG>
 	</General>
 	<Weather>
@@ -23,7 +23,7 @@
 		<Wind2000Dir></Wind2000Dir>
 		<Wind8000SpeedKts></Wind8000SpeedKts>
 		<Wind8000Dir></Wind8000Dir>
-		<Turbulence></Turbulence> <!-- -->
+		<Turbulence></Turbulence> <!-- m/s -->
 		<!-- Clouds and Precipitation -->
 		<CloudBase_FtMSL></CloudBase_FtMSL> <!-- -->
 		<CloudHeight_Ft></CloudHeight_Ft> <!-- -->
