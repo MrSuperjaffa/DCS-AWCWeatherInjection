@@ -123,6 +123,9 @@ Try {
 			$todayDay = (Get-Date).ToUniversalTime().ToString("dd")
 			if($InjectionSettings.Settings.Time.Day) {
 				$todayDay = $InjectionSettings.Settings.Time.Day
+				if($todayDay.Length -eq 1) {
+					$todayDay = "0$todayDay"
+				}
 			}
 			$todayTime = (Get-Date).ToUniversalTime().ToString("HH:mm")
 			if($InjectionSettings.Settings.Time.Time) {
@@ -253,7 +256,7 @@ Try {
 			if(-not ($historicdata[$i].elevation -eq "M")) {
 				$weatherxml.response.data.metar.elevation_m = "$([int]$historicdata[$i].elevation)"
 			}
-			#$weatherxml.Save("test.xml") #For debugging the fake XML
+			$weatherxml.Save("test.xml") #For debugging the fake XML
 		}
         $debugMETAR = $weatherxml.response.data.metar.raw_text
         Write-Log "INFO" "TDS METAR: $debugMETAR" $Log
