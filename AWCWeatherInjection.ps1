@@ -2,7 +2,7 @@
     Author: Mr_Superjaffa#5430
     Description: Inject real world weather into DCS .miz file for use on servers.
     Version: v0.7.2
-    Modified: Dec 25/2021
+    Modified: Jan 07/2022
     Notes: N/A
 #>
 
