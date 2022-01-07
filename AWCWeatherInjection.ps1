@@ -437,6 +437,7 @@ If ($InjectionSettings.Settings.Weather.CloudBase_FtMSL) {
 } Else {
     $cloudBaseMSL = $null
 }
+Write-Log "INFO" "Cloud Base: $cloudBaseMSL ft MSL" $Log
 
 # Checking cloud base against user constraints
 If ($InjectionSettings.Settings.Constraints.MinCloudBase_FtMSL -and ($cloudBaseMSL -lt $InjectionSettings.Settings.Constraints.MinCloudBase_FtMSL)) {
@@ -744,29 +745,29 @@ If ($mission[(GetMissionElement("qnh"))] -match "qnh" -and $Pressure) {
 
 # Exporting cloud height
 Try {
-If ($mission[(GetMissionElement("clouds")) + 2] -match "thickness" -and $cloudHeight) {
-    $mission[(GetMissionElement("clouds")) + 2] = "`t`t`t[`"thickness`"] = $cloudHeight,"
+If ($mission[(GetMissionElement("clouds")) + 3] -match "thickness" -and $cloudHeight) {
+    $mission[(GetMissionElement("clouds")) + 3] = "`t`t`t[`"thickness`"] = $cloudHeight,"
     Write-Log "INFO" "Exported cloud height." $Log
 }} Catch {Write-Log "ERROR" "Cloud height export failed!" $Log}
 
 # Exporting cloud coverage
 Try {
-If ($mission[(GetMissionElement("clouds")) + 3] -match "density" -and ($cloudCoverage -gt -1)) {
-    $mission[(GetMissionElement("clouds")) + 3] = "`t`t`t[`"density`"] = $cloudCoverage,"
+If ($mission[(GetMissionElement("`"density`""))] -match "density" -and ($cloudCoverage -gt -1)) {
+    $mission[(GetMissionElement("`"density`""))] = "`t`t`t[`"density`"] = $cloudCoverage,"
     Write-Log "INFO" "Exported cloud coverage." $Log
 }} Catch {Write-Log "ERROR" "Cloud coverage export failed!" $Log}
 
 # Exporting cloud base
 Try {
-If ($mission[(GetMissionElement("clouds")) + 4] -match "base" -and $cloudBaseMSL) {
-    $mission[(GetMissionElement("clouds")) + 4] = "`t`t`t[`"base`"] = $cloudBaseMSL,"
+If ($mission[(GetMissionElement("`"base`""))] -match "base" -and $cloudBaseMSL) {
+    $mission[(GetMissionElement("`"base`""))] = "`t`t`t[`"base`"] = $cloudBaseMSL,"
     Write-Log "INFO" "Exported cloud base." $Log
 }} Catch {Write-Log "ERROR" "Cloud base export failed!" $Log}
 
 # Exporting precipitation
 Try {
-If ($mission[(GetMissionElement("clouds")) + 5] -match "iprecptns" -and $Precipitation -ge 0) {
-    $mission[(GetMissionElement("clouds")) + 5] = "`t`t`t[`"iprecptns`"] = $Precipitation,"
+If ($mission[(GetMissionElement("`"iprecptns`""))] -match "iprecptns" -and $Precipitation -ge 0) {
+    $mission[(GetMissionElement("`"iprecptns`""))] = "`t`t`t[`"iprecptns`"] = $Precipitation,"
     Write-Log "INFO" "Exported precipitation." $Log
 }} Catch {Write-Log "ERROR" "Precipitation export failed!"}
 
