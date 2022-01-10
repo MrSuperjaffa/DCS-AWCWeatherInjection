@@ -9,7 +9,7 @@
 	<General>
 		<AirportICAO>KLSV</AirportICAO>
 		<EnableTime>False</EnableTime>
-		<TimeFormat>Zulu</TimeFormat> <!-- "Zulu" or "Local" -->
+		<TimeFormat>Zulu</TimeFormat> <!-- "Zulu", "Local", "Random" -->
 		<DEBUG>False</DEBUG>
 	</General>
 	<Weather>
